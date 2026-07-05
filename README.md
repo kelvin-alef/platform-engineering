@@ -1,6 +1,6 @@
 # Proposed Platform Solution
 
-To address the current challenges, I would build a self-service Internal Developer Platform (IDP) focused on improving developer experience while standardizing infrastructure provisioning, configuration management, security, and local development.
+To address the current challenges, I would build a self-service Internal Developer Platform focused on improving developer experience while standardizing infrastructure provisioning, configuration management, security, and local development.
 
 The platform would provide a React-based web interface where developers can provision standardized AWS resources such as ECS services, RDS databases, S3 buckets, and other approved infrastructure components without opening tickets for the infrastructure team.
 
