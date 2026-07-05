@@ -2,14 +2,33 @@ version: "3.9"
 
 services:
   app:
-    image: nginx:latest
+    build:
+      context: ./app
+      dockerfile: Dockerfile
     container_name: sample-app
     ports:
-      - "8080:80"
+      - "8080:8080"
+    environment:
+      PORT: "8080"
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_USER: app
+      DB_PASSWORD: app
+      DB_NAME: app
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      AWS_ENDPOINT_URL: http://localstack:4566
+      AWS_REGION: us-east-1
+      S3_BUCKET_NAME: sample-app-bucket
+      SSM_PARAMETER_PATH: /dev/sample-app/ecs_cluster_name
+      ENV_NAME: dev
     depends_on:
-      - postgres
-      - redis
-      - localstack
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      localstack:
+        condition: service_healthy
 
   postgres:
     image: postgres:16
@@ -22,23 +41,39 @@ services:
       - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d app"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7
     container_name: redis
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   localstack:
     image: localstack/localstack:latest
     container_name: localstack
     environment:
-      SERVICES: s3,sqs,secretsmanager,ssm
+      SERVICES: s3,ssm
       AWS_DEFAULT_REGION: us-east-1
     ports:
       - "4566:4566"
     volumes:
       - localstack-data:/var/lib/localstack
+      - ./init-localstack.sh:/etc/localstack/init/ready.d/init-localstack.sh
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:4566/_localstack/health | grep -q '\"s3\": \"available\"'"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres-data:

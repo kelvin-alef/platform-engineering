@@ -1,0 +1,46 @@
+name: "Terraform CI"
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: "Validate and Scan"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.6.0"
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+
+      - name: Initialize Dev Environment
+        run: |
+          cd terraform/environments/dev
+          terraform init -backend=false
+
+      - name: Validate Dev Environment
+        run: |
+          cd terraform/environments/dev
+          terraform validate
+
+      # Security Static Code Analysis (tfsec / checkov)
+      - name: Security Scan with tfsec
+        uses: aquasecurity/tfsec-pr-commenter-action@v1.2.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true # Do not block if no token exists in local/sandbox setup
